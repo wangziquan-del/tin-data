@@ -84,7 +84,7 @@ def zhiji_quote(item, fallback_name, now):
         "date": now.date().isoformat(),
         "open_interest": number(item.get("open_interest")),
         "volume": number(item.get("volume")),
-        "source": "知几观 API",
+        "source": "实时行情",
     }
 
 
@@ -148,7 +148,7 @@ csi1000 = {
 as_of = now.isoformat(timespec="seconds")
 payload = {
     "updated_at": as_of,
-    "source": "知几优先；新浪回退",
+    "source": "实时行情优先；新浪回退",
     "sn": sn,
     "lme": lme,
     "ag": ag,
@@ -158,17 +158,17 @@ payload = {
         "tin_silver": {
             "value": ratio(sn and sn.get("last"), ag and ag.get("last")),
             "as_of": as_of,
-            "source": "知几沪锡 / 知几沪银",
+            "source": "实时行情",
         },
         "tin_copper": {
             "value": ratio(sn and sn.get("last"), cu and cu.get("last")),
             "as_of": as_of,
-            "source": "知几沪锡 / 知几沪铜",
+            "source": "实时行情",
         },
         "tin_csi1000": {
             "value": ratio(sn and sn.get("last"), csi1000.get("last")),
             "as_of": as_of,
-            "source": "知几沪锡 / 新浪中证1000",
+            "source": "实时行情 / 新浪中证1000",
         },
     },
 }

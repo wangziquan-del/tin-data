@@ -49,7 +49,7 @@ def fetch_series(indicator_id, key):
             points[day] = value
     meta = {
         "id": indicator_id,
-        "source": "Zhiji API",
+        "source": "数据接口",
         "name": payload.get("name"),
         "unit": payload.get("unit"),
         "frequency": payload.get("frequency"),
@@ -139,7 +139,7 @@ for label, indicator_id in INDICATORS.items():
         series[label], meta[label] = fetch_series(indicator_id, key)
     except Exception as exc:
         print(f"Zhiji refresh failed for {label}: {type(exc).__name__}")
-        series[label], meta[label] = [], {"id": indicator_id, "source": "Zhiji API", "error": type(exc).__name__}
+        series[label], meta[label] = [], {"id": indicator_id, "source": "数据接口", "error": type(exc).__name__}
 
 path = Path("index.html")
 text = path.read_text(encoding="utf-8")
