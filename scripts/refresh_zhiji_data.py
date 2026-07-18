@@ -15,6 +15,7 @@ INDICATORS = {
     "social_stock": "ID01517441",
     "tc_yunnan": "ID01538256",
     "tc_jiangxi": "ID01538257",
+    "smelting_profit": "ID02105841",
     "warehouse_singapore": "ID00302752",
     "warehouse_hong_kong": "FU00094556",
     "warehouse_port_klang": "ID00302749",
@@ -175,6 +176,11 @@ if series["tc_yunnan"] or series["tc_jiangxi"]:
         latest_data["tc_yunnan"] = latest(series["tc_yunnan"])
     if series["tc_jiangxi"]:
         latest_data["tc_jiangxi"] = latest(series["tc_jiangxi"])
+if series["smelting_profit"]:
+    charts["cost_profit"] = continuous_chart({
+        "冶炼锡毛利（日度）": series["smelting_profit"],
+    })
+    latest_data["smelting_profit"] = latest(series["smelting_profit"])
 
 warehouses = [
     warehouse_row("新加坡", series["warehouse_singapore"]),
@@ -192,6 +198,7 @@ source_meta.update({
     "socialStock": meta["social_stock"],
     "tcYunnan": meta["tc_yunnan"],
     "tcJiangxi": meta["tc_jiangxi"],
+    "smeltingProfit": meta["smelting_profit"],
     "warehouses": {
         "新加坡": meta["warehouse_singapore"],
         "中国香港": meta["warehouse_hong_kong"],
