@@ -166,9 +166,31 @@ assert.equal(social.items.length, 2);
 assert.equal(social.sources['小红书'].ok, true);
 assert.equal(social.sources['抖音'].ok, true);
 
-const policy = await buildPolicyPayload();
+const mockAi = {
+  async run(model, input) {
+    assert.equal(model, '@cf/zai-org/glm-4.7-flash');
+    assert.equal(input.response_format.type, 'json_object');
+    return {
+      response: JSON.stringify({
+        items: Array.from({ length: 12 }, function (_, id) {
+          return {
+            id: id,
+            title_zh: '中文政策标题 ' + id,
+            summary_zh: '这是严格根据 RSS 标题与摘要生成的中文内容，用于测试页面展示，同时保留原文链接供进一步核验。',
+          };
+        }),
+      }),
+    };
+  },
+};
+
+const policy = await buildPolicyPayload({ AI: mockAi });
 assert.ok(policy.items.length >= 2);
 assert.equal(policy.items[0].official, true);
+assert.ok(policy.items[0].title_zh.startsWith('中文政策标题'));
+assert.ok(policy.items[0].summary_zh.includes('RSS'));
+assert.equal(policy.sources['WORKERS AI 中文摘要'].ok, true);
+assert.equal(Object.hasOwn(policy.items[0], '_source_text'), false);
 
 const pending = [];
 const response = await handleIntelligenceRequest(
@@ -188,6 +210,7 @@ const monitor = await runScheduledChecks({
   ZHIJI_API_KEY: 'test-key',
   XHS_DOUYIN_MCP_TOKEN: 'test-token',
   FEISHU_WEBHOOK: 'https://open.feishu.cn/open-apis/bot/v2/hook/test',
+  AI: mockAi,
 }, async function () {
   return { ok: true };
 });

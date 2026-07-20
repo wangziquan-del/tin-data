@@ -9,7 +9,7 @@
 - `/api/quotes`：沪锡、伦锡和比价行情。
 - `/api/technical`：新浪真实 15/60 分钟 K + 智辑日 K，计算 MA、MACD、RSI 与区间结构；5 分钟边缘缓存。
 - `/api/social`：通过远程 MCP 分别检索小红书和抖音；15 分钟边缘缓存，单渠道失败不影响另一渠道。
-- `/api/policy`：美联储、International Tin Association、Alphamin 等 RSS 与锡产业聚合；15 分钟边缘缓存。
+- `/api/policy`：美联储、International Tin Association、Alphamin 等 RSS 与锡产业聚合；Workers AI 忠实生成中文标题和中文摘要，保留原文链接；15 分钟边缘缓存。
 - Cloudflare Cron：每 15 分钟执行一次行情、技术、社交和政策自检。
 
 网页会优先显示 Worker 的实时结果。接口失败时保留最近一次成功缓存；若缓存也不可用，则继续显示构建时写入的页面快照。

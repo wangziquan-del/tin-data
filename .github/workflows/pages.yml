@@ -47,3 +47,6 @@ jobs:
       - name: Deploy Pages
         id: deployment
         uses: actions/deploy-pages@v4
+      - name: Warm and verify live Worker policy feed
+        continue-on-error: true
+        run: python scripts/check_worker_live.py

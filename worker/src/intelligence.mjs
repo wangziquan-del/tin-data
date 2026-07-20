@@ -100,7 +100,7 @@ export async function runScheduledChecks(env, quoteCheck) {
     { name: '实时行情', run: quoteCheck },
     { name: '技术分析', run: function () { return buildTechnicalPayload(env); } },
     { name: '社交情绪', run: function () { return buildSocialPayload(env); } },
-    { name: '政策事件', run: function () { return buildPolicyPayload(); } },
+    { name: '政策事件', run: function () { return buildPolicyPayload(env); } },
   ];
   const settled = await Promise.allSettled(definitions.map(function (definition) {
     return definition.run();
@@ -135,8 +135,8 @@ export async function handleIntelligenceRequest(request, env, ctx) {
     });
   }
   if (url.pathname === '/api/policy') {
-    return cachedJson(request, ctx, 'policy', INTELLIGENCE_TTL_SECONDS, INTELLIGENCE_STALE_SECONDS, function () {
-      return buildPolicyPayload();
+    return cachedJson(request, ctx, 'policy-zh-v1', INTELLIGENCE_TTL_SECONDS, INTELLIGENCE_STALE_SECONDS, function () {
+      return buildPolicyPayload(env);
     });
   }
   return null;

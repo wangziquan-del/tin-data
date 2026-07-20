@@ -250,6 +250,7 @@ export default {
         configured: Boolean(env.ZHIJI_API_KEY),
         social_configured: Boolean(env.XHS_DOUYIN_MCP_TOKEN),
         feishu_configured: Boolean(env.FEISHU_WEBHOOK),
+        ai_configured: Boolean(env.AI),
         now: shanghaiTimestamp(),
       }, 200, { 'Cache-Control': 'no-store' }), origin);
     }
