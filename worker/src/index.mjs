@@ -1,3 +1,8 @@
+import {
+  handleIntelligenceRequest,
+  runScheduledChecks,
+} from './intelligence.mjs';
+
 const ZHIJI_URL = 'https://zhiji-ai.xyz/guan/api/quote';
 const SINA_URL = 'https://hq.sinajs.cn/rn=tin-worker&list=hf_SND,s_sh000852';
 const CACHE_TTL_SECONDS = 15;
@@ -236,11 +241,15 @@ export default {
     if (request.method !== 'GET') {
       return withCors(jsonResponse({ error: 'method_not_allowed' }, 405), origin);
     }
+    const intelligence = await handleIntelligenceRequest(request, env, ctx);
+    if (intelligence) return intelligence;
     if (url.pathname === '/health') {
       return withCors(jsonResponse({
         ok: true,
         service: 'tin-insight-api',
         configured: Boolean(env.ZHIJI_API_KEY),
+        social_configured: Boolean(env.XHS_DOUYIN_MCP_TOKEN),
+        feishu_configured: Boolean(env.FEISHU_WEBHOOK),
         now: shanghaiTimestamp(),
       }, 200, { 'Cache-Control': 'no-store' }), origin);
     }
@@ -249,8 +258,13 @@ export default {
     }
     return withCors(jsonResponse({
       service: 'tin-insight-api',
-      endpoints: ['/health', '/api/quotes'],
+      endpoints: ['/health', '/api/quotes', '/api/technical', '/api/social', '/api/policy'],
       cache_seconds: CACHE_TTL_SECONDS,
     }, 200, { 'Cache-Control': 'no-store' }), origin);
+  },
+  async scheduled(controller, env, ctx) {
+    ctx.waitUntil(runScheduledChecks(env, function () {
+      return buildQuotePayload(env);
+    }));
   },
 };

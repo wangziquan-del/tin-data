@@ -5,7 +5,9 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 PUBLIC_FILES = (ROOT / "index.html", ROOT / "quotes.json")
-FORBIDDEN = ("zhiji", "知几", "智己", "抖音", "小红书", "douyin", "xhs")
+# The public page may name verified content platforms. Keep only internal or
+# ambiguous provider labels out of the published snapshot.
+FORBIDDEN = ("zhiji", "知几", "智己")
 
 
 def main() -> None:

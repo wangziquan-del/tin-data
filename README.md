@@ -1,15 +1,39 @@
 # 锡息相关
 
-全球锡产业监测台的 GitHub Pages 正式版。
+全球锡产业监测台：GitHub Pages 前端 + Cloudflare 常驻 Worker。
 
-## 文件
+## 在线架构
 
-- `index.html`：网站入口，由本地 `build_tin_dashboard_review.py` 生成。
-- `.github/workflows/pages.yml`：推送到 `main` 后自动部署 GitHub Pages。
-- `.nojekyll`：关闭 Jekyll 处理。
+- GitHub Pages：公开网页，推送到 `main` 后自动部署。
+- Cloudflare Worker：脱离 Codex 和本地终端常驻运行。
+- `/api/quotes`：沪锡、伦锡和比价行情。
+- `/api/technical`：新浪真实 15/60 分钟 K + 智辑日 K，计算 MA、MACD、RSI 与区间结构；5 分钟边缘缓存。
+- `/api/social`：通过远程 MCP 分别检索小红书和抖音；15 分钟边缘缓存，单渠道失败不影响另一渠道。
+- `/api/policy`：美联储、International Tin Association、Alphamin 等 RSS 与锡产业聚合；15 分钟边缘缓存。
+- Cloudflare Cron：每 15 分钟执行一次行情、技术、社交和政策自检。
 
-## 更新
+网页会优先显示 Worker 的实时结果。接口失败时保留最近一次成功缓存；若缓存也不可用，则继续显示构建时写入的页面快照。
 
-在本地重新运行构建脚本后，提交并推送新的 `index.html`。GitHub Actions 会自动发布。
+## Worker 配置
 
-GitHub Actions 每 5 分钟尝试刷新沪锡和 LME 锡行情，网页每 15 秒检查新的 `quotes.json`。调度和 Pages 部署可能延迟，因此公开站属于分钟级准实时；其他基本面数据随本地构建更新。本地服务仍提供 15 秒行情刷新。
+`worker/wrangler.toml` 配置了 `*/15 * * * *` 的 Cron Trigger。敏感值只放 Cloudflare Secret，不提交到仓库：
+
+```powershell
+npx --yes wrangler@latest secret put ZHIJI_API_KEY --config worker/wrangler.toml
+npx --yes wrangler@latest secret put XHS_DOUYIN_MCP_TOKEN --config worker/wrangler.toml
+npx --yes wrangler@latest secret put FEISHU_WEBHOOK --config worker/wrangler.toml
+# 飞书机器人启用签名校验时再设置：
+npx --yes wrangler@latest secret put FEISHU_SIGNING_SECRET --config worker/wrangler.toml
+```
+
+飞书告警包含异常组件、上海时间、错误摘要和网站链接；相同错误一小时内去重。可选聚合源短暂失败不会产生噪音告警，核心源或小红书/抖音任一渠道失败会告警。
+
+## 验证与部署
+
+```powershell
+node worker/test-worker.mjs
+node worker/test-intelligence.mjs
+npx --yes wrangler@latest deploy --config worker/wrangler.toml
+```
+
+GitHub Actions 仍会定时生成 `quotes.json` 作为后备行情快照。
