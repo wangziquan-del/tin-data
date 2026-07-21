@@ -6,6 +6,23 @@ import {
 } from './intelligence-shared.mjs';
 
 const SOCIAL_MCP_URL = 'https://zhiji-ai.xyz/mcp/xhs-douyin';
+const SOCIAL_MCP_COOLDOWN_SECONDS = 3600;
+
+function cooldownKey(toolName) {
+  return new Request('https://tin-insight-social.internal/cooldown/' + toolName, { method: 'GET' });
+}
+
+async function activeCooldown(toolName) {
+  const cached = await caches.default.match(cooldownKey(toolName));
+  return cached ? cached.text() : '';
+}
+
+async function rememberChallenge(toolName, detail) {
+  if (!/result_status\s*=\s*5|verify_check|风控人机验证挑战/i.test(String(detail || ''))) return;
+  await caches.default.put(cooldownKey(toolName), new Response(String(detail), {
+    headers: { 'Cache-Control': 'public, s-maxage=' + SOCIAL_MCP_COOLDOWN_SECONDS },
+  }));
+}
 
 function parseMcpResponse(text, contentType) {
   if (String(contentType || '').toLowerCase().indexOf('text/event-stream') < 0) {
@@ -45,6 +62,8 @@ function searchItems(payload) {
 
 async function mcpSearch(env, toolName, keyword) {
   if (!env.XHS_DOUYIN_MCP_TOKEN) throw new Error('XHS_DOUYIN_MCP_TOKEN is not configured');
+  const cooldown = await activeCooldown(toolName);
+  if (cooldown) throw new Error(toolName + ': 风控冷却中，暂不重复请求；上次错误：' + cooldown);
   const response = await fetchWithTimeout(SOCIAL_MCP_URL, {
     method: 'POST',
     headers: {
@@ -71,6 +90,7 @@ async function mcpSearch(env, toolName, keyword) {
     const detail = (Array.isArray(result.content) ? result.content : []).map(function (item) {
       return item && item.type === 'text' ? String(item.text || '').trim() : '';
     }).filter(Boolean).join(' ');
+    await rememberChallenge(toolName, detail);
     throw new Error(toolName + ': ' + (detail || 'remote MCP error'));
   }
   const structured = searchItems(result.structuredContent);
@@ -82,7 +102,10 @@ async function mcpSearch(env, toolName, keyword) {
     if (!item || item.type !== 'text') continue;
     const text = String(item.text || '').trim();
     if (!text) continue;
-    if (/^error:/i.test(text)) throw new Error(toolName + ': ' + text);
+    if (/^error:/i.test(text)) {
+      await rememberChallenge(toolName, text);
+      throw new Error(toolName + ': ' + text);
+    }
     try {
       const items = searchItems(parseJsonText(text));
       if (items.length) return items;
