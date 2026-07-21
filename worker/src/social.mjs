@@ -67,7 +67,12 @@ async function mcpSearch(env, toolName, keyword) {
   const parsed = parseMcpResponse(await response.text(), response.headers.get('Content-Type'));
   if (!parsed || parsed.error) throw new Error(toolName + ' invalid MCP response');
   const result = parsed.result || {};
-  if (result.isError) throw new Error(toolName + ': remote MCP error');
+  if (result.isError) {
+    const detail = (Array.isArray(result.content) ? result.content : []).map(function (item) {
+      return item && item.type === 'text' ? String(item.text || '').trim() : '';
+    }).filter(Boolean).join(' ');
+    throw new Error(toolName + ': ' + (detail || 'remote MCP error'));
+  }
   const structured = searchItems(result.structuredContent);
   if (structured.length) return structured;
   const content = Array.isArray(result.content) ? result.content : [];
@@ -191,7 +196,13 @@ export async function buildSocialPayload(env) {
       sources[definition.platform] = { ok: false, count: 0, error: safeError(result.reason) };
     }
   });
-  if (!combined.length) throw new Error('Both Xiaohongshu and Douyin MCP searches failed');
+  if (!combined.length) {
+    const detail = definitions.map(function (definition) {
+      const source = sources[definition.platform] || {};
+      return definition.platform + '=' + String(source.error || 'unknown error');
+    }).join('; ');
+    throw new Error('Both Xiaohongshu and Douyin MCP searches failed: ' + detail);
+  }
   combined = dedupeSocial(combined);
   combined.sort(function (left, right) {
     return right.raw_time - left.raw_time || (right.likes + right.comments * 2) - (left.likes + left.comments * 2);

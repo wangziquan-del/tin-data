@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import json
+import urllib.error
 import urllib.request
 
 
@@ -15,10 +16,14 @@ def get_json(path: str) -> dict:
         BASE_URL + path,
         headers={"User-Agent": "Tin Insight GitHub Actions Smoke Test"},
     )
-    with urllib.request.urlopen(request, timeout=180) as response:
-        if response.status != 200:
-            raise RuntimeError(f"{path} returned HTTP {response.status}")
-        return json.load(response)
+    try:
+        with urllib.request.urlopen(request, timeout=180) as response:
+            if response.status != 200:
+                raise RuntimeError(f"{path} returned HTTP {response.status}")
+            return json.load(response)
+    except urllib.error.HTTPError as error:
+        body = error.read().decode("utf-8", errors="replace")
+        raise RuntimeError(f"{path} returned HTTP {error.code}: {body}") from error
 
 
 def has_chinese(value: object) -> bool:
