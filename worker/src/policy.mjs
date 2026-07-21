@@ -186,6 +186,10 @@ async function localizeBatch(env, records) {
   return Array.isArray(parsed.items) ? parsed.items : [];
 }
 
+function hasChineseText(value) {
+  return /[\u3400-\u9fff]/.test(String(value || ''));
+}
+
 async function addChineseSummaries(env, items) {
   if (!env || !env.AI) throw new Error('Workers AI binding is not configured');
   const records = items.map(function (item, id) {
@@ -207,6 +211,16 @@ async function addChineseSummaries(env, items) {
   const localized = new Map(translatedBatches.flat().map(function (item) {
     return [Number(item.id), item];
   }));
+  const incomplete = records.filter(function (record) {
+    const translation = localized.get(record.id) || {};
+    return !hasChineseText(translation.title_zh) || !hasChineseText(translation.summary_zh);
+  });
+  if (incomplete.length) {
+    const retried = await localizeBatch(env, incomplete);
+    retried.forEach(function (item) {
+      localized.set(Number(item.id), item);
+    });
+  }
   return items.map(function (item, id) {
     const translation = localized.get(id) || {};
     const titleZh = String(translation.title_zh || '').trim().slice(0, 180);
@@ -214,8 +228,8 @@ async function addChineseSummaries(env, items) {
     return {
       ...item,
       original_title: item.title,
-      title_zh: titleZh || item.title,
-      summary_zh: summaryZh || 'RSS 摘要未提供更多细节，请点击原文核验。',
+      title_zh: hasChineseText(titleZh) ? titleZh : '锡产业动态｜' + (titleZh || item.title),
+      summary_zh: hasChineseText(summaryZh) ? summaryZh : 'RSS 摘要未提供更多细节，请点击原文核验。',
     };
   });
 }
